@@ -54,6 +54,8 @@ const hwaddr allwinner_h3_memmap[] = {
     [AW_H3_DEV_UART2]      = 0x01c28800,
     [AW_H3_DEV_UART3]      = 0x01c28c00,
     [AW_H3_DEV_EMAC]       = 0x01c30000,
+    [AW_H3_DEV_CRYPTO]     = 0x01c15000,
+    [AW_H3_DEV_CRYPTO1]    = 0x01c16000,
     [AW_H3_DEV_DRAMCOM]    = 0x01c62000,
     [AW_H3_DEV_DRAMCTL]    = 0x01c63000,
     [AW_H3_DEV_DRAMPHY]    = 0x01c65000,
@@ -83,7 +85,6 @@ struct AwH3Unimplemented {
     { "ve",        0x01c0e000, 4 * KiB },
     { "mmc1",      0x01c10000, 4 * KiB },
     { "mmc2",      0x01c11000, 4 * KiB },
-    { "crypto",    0x01c15000, 4 * KiB },
     { "msgbox",    0x01c17000, 4 * KiB },
     { "spinlock",  0x01c18000, 4 * KiB },
     { "usb0-otg",  0x01c19000, 4 * KiB },
@@ -161,7 +162,9 @@ enum {
     AW_H3_GIC_SPI_OHCI2     = 77,
     AW_H3_GIC_SPI_EHCI3     = 78,
     AW_H3_GIC_SPI_OHCI3     = 79,
-    AW_H3_GIC_SPI_EMAC      = 82
+    AW_H3_GIC_SPI_EMAC      = 82,
+    AW_H3_GIC_SPI_CRYPTO    = 94,
+    AW_H3_GIC_SPI_CRYPTO1   = 95
 };
 
 /* Allwinner H3 general constants */
@@ -217,6 +220,9 @@ static void allwinner_h3_init(Object *obj)
     object_initialize_child(obj, "mmc0", &s->mmc0, TYPE_AW_SDHOST_SUN5I);
 
     object_initialize_child(obj, "emac", &s->emac, TYPE_AW_SUN8I_EMAC);
+
+    object_initialize_child(obj, "crypto", &s->crypto, TYPE_RK_CRYPTO);
+    object_initialize_child(obj, "crypto1", &s->crypto1, TYPE_RK_CRYPTO);
 
     object_initialize_child(obj, "dramc", &s->dramc, TYPE_AW_H3_DRAMC);
     object_property_add_alias(obj, "ram-addr", OBJECT(&s->dramc),
@@ -368,6 +374,20 @@ static void allwinner_h3_realize(DeviceState *dev, Error **errp)
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->emac), 0, s->memmap[AW_H3_DEV_EMAC]);
     sysbus_connect_irq(SYS_BUS_DEVICE(&s->emac), 0,
                        qdev_get_gpio_in(DEVICE(&s->gic), AW_H3_GIC_SPI_EMAC));
+
+    object_property_set_link(OBJECT(&s->crypto), "dma-memory",
+                             OBJECT(get_system_memory()), &error_fatal);
+    sysbus_realize(SYS_BUS_DEVICE(&s->crypto), &error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&s->crypto), 0, s->memmap[AW_H3_DEV_CRYPTO]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(&s->crypto), 0,
+                       qdev_get_gpio_in(DEVICE(&s->gic), AW_H3_GIC_SPI_CRYPTO));
+
+    object_property_set_link(OBJECT(&s->crypto1), "dma-memory",
+                             OBJECT(get_system_memory()), &error_fatal);
+    sysbus_realize(SYS_BUS_DEVICE(&s->crypto1), &error_fatal);
+    sysbus_mmio_map(SYS_BUS_DEVICE(&s->crypto1), 0, s->memmap[AW_H3_DEV_CRYPTO1]);
+    sysbus_connect_irq(SYS_BUS_DEVICE(&s->crypto1), 0,
+                       qdev_get_gpio_in(DEVICE(&s->gic), AW_H3_GIC_SPI_CRYPTO1));
 
     /* Universal Serial Bus */
     sysbus_create_simple(TYPE_AW_H3_EHCI, s->memmap[AW_H3_DEV_EHCI0],

@@ -45,6 +45,7 @@
 #include "hw/misc/allwinner-h3-sysctrl.h"
 #include "hw/misc/allwinner-sid.h"
 #include "hw/sd/allwinner-sdhost.h"
+#include "hw/crypto/rockchip-crypto.h"
 #include "hw/net/allwinner-sun8i-emac.h"
 #include "hw/rtc/allwinner-rtc.h"
 #include "target/arm/cpu.h"
@@ -82,6 +83,8 @@ enum {
     AW_H3_DEV_UART2,
     AW_H3_DEV_UART3,
     AW_H3_DEV_EMAC,
+    AW_H3_DEV_CRYPTO,
+    AW_H3_DEV_CRYPTO1,
     AW_H3_DEV_DRAMCOM,
     AW_H3_DEV_DRAMCTL,
     AW_H3_DEV_DRAMPHY,
@@ -131,6 +134,8 @@ struct AwH3State {
     AwSidState sid;
     AwSdHostState mmc0;
     AwSun8iEmacState emac;
+    RkCryptoState crypto;
+    RkCryptoState crypto1;
     AwRtcState rtc;
     GICState gic;
     MemoryRegion sram_a1;

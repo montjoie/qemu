@@ -189,4 +189,15 @@ int qcrypto_hash_base64(QCryptoHashAlgorithm alg,
                         char **base64,
                         Error **errp);
 
+int qcrypto_compress_bytesv(QCryptoHashAlgorithm alg,
+                        const struct iovec *iov,
+                        size_t niov,
+                        uint64_t *state,
+                        Error **errp);
+
+int qcrypto_compress_bytes(QCryptoHashAlgorithm alg,
+                       const char *buf,
+                       size_t len,
+                       uint64_t *state,
+                       Error **errp);
 #endif /* QCRYPTO_HASH_H */

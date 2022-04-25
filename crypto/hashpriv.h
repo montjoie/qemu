@@ -24,6 +24,11 @@ struct QCryptoHashDriver {
                        uint8_t **result,
                        size_t *resultlen,
                        Error **errp);
+    int (*compress_bytesv)(QCryptoHashAlgorithm alg,
+                       const struct iovec *iov,
+                       size_t niov,
+                       uint64_t *state,
+                       Error **errp);
 };
 
 extern QCryptoHashDriver qcrypto_hash_lib_driver;

@@ -24,6 +24,7 @@
 #include "hashpriv.h"
 #include <nettle/md5.h>
 #include <nettle/sha.h>
+#include <nettle/sha2.h>
 #include <nettle/ripemd160.h>
 
 typedef void (*qcrypto_nettle_init)(void *ctx);
@@ -156,6 +157,89 @@ qcrypto_nettle_hash_bytesv(QCryptoHashAlgorithm alg,
 }
 
 
+static int
+qcrypto_nettle_compress_bytesv(QCryptoHashAlgorithm alg,
+                           const struct iovec *iov,
+                           size_t niov,
+                           uint64_t *state,
+                           Error **errp)
+{
+    size_t i;
+    size_t bs;
+    uint32_t off;
+    uint32_t *state32 = (uint32_t *)state;
+
+    if (!qcrypto_hash_supports(alg)) {
+        error_setg(errp,
+                   "Unknown hash algorithm %d",
+                   alg);
+        return -1;
+    }
+    switch (alg) {
+    case QCRYPTO_HASH_ALG_MD5:
+    case QCRYPTO_HASH_ALG_SHA1:
+    case QCRYPTO_HASH_ALG_SHA224:
+    case QCRYPTO_HASH_ALG_SHA256:
+        bs = 64;
+        break;
+    case QCRYPTO_HASH_ALG_SHA384:
+    case QCRYPTO_HASH_ALG_SHA512:
+        bs = 128;
+        break;
+    default:
+        error_setg(errp, "Unsupported hash");
+        return -1;
+    }
+
+    for (i = 0; i < niov; i++) {
+        uint8_t *data = iov[i].iov_base;
+        size_t tlen = iov[i].iov_len;
+
+        if (tlen % bs) {
+            return -1;
+        }
+        off = 0;
+        while (tlen > 0) {
+            switch (alg) {
+            case QCRYPTO_HASH_ALG_MD5:
+                nettle_md5_compress(state32, data + off);
+                break;
+            case QCRYPTO_HASH_ALG_SHA1:
+                nettle_sha1_compress(state32, data + off);
+                break;
+            case QCRYPTO_HASH_ALG_SHA224:
+            case QCRYPTO_HASH_ALG_SHA256:
+                /* old version of nettle does not have it */
+                #ifdef sha256_compress
+                sha256_compress(state32, data + off);
+                #else
+                error_setg(errp, "old nettle without sha256_compress");
+                return -1;
+                #endif
+                break;
+            case QCRYPTO_HASH_ALG_SHA384:
+            case QCRYPTO_HASH_ALG_SHA512:
+                #ifdef sha512_compress
+                sha512_compress(state, data + off);
+                #else
+                error_setg(errp, "old nettle without sha512_compress");
+                return -1;
+                #endif
+                break;
+            default:
+                error_setg(errp, "Unsupported hash");
+                return -1;
+            }
+            off += bs;
+            tlen -= bs;
+        }
+    }
+
+    return 0;
+}
+
+
 QCryptoHashDriver qcrypto_hash_lib_driver = {
     .hash_bytesv = qcrypto_nettle_hash_bytesv,
+    .compress_bytesv = qcrypto_nettle_compress_bytesv,
 };

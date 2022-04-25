@@ -21,6 +21,7 @@
 #include "qemu/osdep.h"
 #include "crypto/hash.h"
 #include "hashpriv.h"
+#include "qapi/error.h"
 
 static size_t qcrypto_hash_alg_size[QCRYPTO_HASH_ALG__MAX] = {
     [QCRYPTO_HASH_ALG_MD5] = 16,
@@ -142,3 +143,28 @@ int qcrypto_hash_base64(QCryptoHashAlgorithm alg,
 
     return qcrypto_hash_base64v(alg, &iov, 1, base64, errp);
 }
+
+int qcrypto_compress_bytesv(QCryptoHashAlgorithm alg,
+                        const struct iovec *iov,
+                        size_t niov,
+                        uint64_t *state,
+                        Error **errp)
+{
+    if (!qcrypto_hash_lib_driver.compress_bytesv) {
+        error_setg(errp, "Crypto backend does not support compress");
+        return -1;
+    }
+    return qcrypto_hash_lib_driver.compress_bytesv(alg, iov, niov, state, errp);
+}
+
+int qcrypto_compress_bytes(QCryptoHashAlgorithm alg,
+                       const char *buf,
+                       size_t len,
+                       uint64_t *state,
+                       Error **errp)
+{
+    struct iovec iov = { .iov_base = (char *)buf,
+                         .iov_len = len };
+    return qcrypto_compress_bytesv(alg, &iov, 1, state, errp);
+}
+

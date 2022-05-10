@@ -2947,6 +2947,7 @@ if have_system
     'hw/block',
     'hw/block/dataplane',
     'hw/char',
+    'hw/crypto',
     'hw/display',
     'hw/dma',
     'hw/hyperv',

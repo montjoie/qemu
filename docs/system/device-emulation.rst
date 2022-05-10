@@ -82,6 +82,7 @@ Emulated Devices
 .. toctree::
    :maxdepth: 1
 
+   devices/allwinner-sun4i-ss.rst
    devices/can.rst
    devices/ccid.rst
    devices/cxl.rst

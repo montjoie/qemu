@@ -70,4 +70,8 @@ config ACPI_ERST
 
 config ACPI_CXL
     bool
+
+config ACPI_POWER_METER
+    bool
+    default y
     depends on ACPI

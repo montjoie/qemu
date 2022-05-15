@@ -109,6 +109,97 @@ static void acpi_dsdt_add_pci(Aml *scope, MicrovmMachineState *mms)
     acpi_dsdt_add_gpex(scope, &mms->gpex);
 }
 
+static void acpi_add_power(Aml *scope)
+{
+    Aml *dev = aml_device("PMT1");
+    Aml *method;
+    Aml *pkg;
+    Aml *evt;
+
+    aml_append(dev, aml_name_decl("_HID", aml_string("ACPI000D")));
+    aml_append(dev, aml_name_decl("_UID", aml_int(0)));
+    aml_append(scope,
+    	aml_operation_region("DBG", AML_SYSTEM_IO, aml_int(0x0080), 0x02));
+    aml_append(dev, aml_name_decl("PMAI", aml_int(666)));
+    aml_append(dev, aml_name_decl("HWL", aml_int(333)));
+    aml_append(dev, aml_name_decl("PTPL", aml_int(0)));
+    aml_append(dev, aml_name_decl("PTPU", aml_int(10)));
+
+    pkg = aml_package(14);
+    aml_append(pkg, aml_int(0x1)); /* flags */
+    aml_append(pkg, aml_int(0));
+    aml_append(pkg, aml_int(0));
+    aml_append(pkg, aml_int(0));
+    aml_append(pkg, aml_int(1));
+    aml_append(pkg, aml_int(0)); /* min */
+    aml_append(pkg, aml_int(100)); /* max */
+    aml_append(pkg, aml_int(1));
+    aml_append(pkg, aml_int(0));
+    aml_append(pkg, aml_int(0)); /* min cap */
+    aml_append(pkg, aml_int(0)); /* max cap */
+    aml_append(pkg, aml_string("Qemu ACPI power"));
+    aml_append(pkg, aml_string("Serial 0"));
+    aml_append(pkg, aml_string("Qemu OEM"));
+    aml_append(scope, aml_name_decl("PMCP", pkg));
+
+    method = aml_method("_PMC", 0, AML_NOTSERIALIZED);
+    aml_append(method, aml_return(aml_name("PMCP")));
+    aml_append(dev, method);
+
+    method = aml_method("_PMD", 0, AML_NOTSERIALIZED);
+    pkg = aml_package(1);
+    aml_append(pkg, aml_name("_SB"));
+    aml_append(method, aml_return(pkg));
+    aml_append(dev, method);
+
+    method = aml_method("_PMM", 0, AML_NOTSERIALIZED);
+    aml_append(method, aml_return(aml_int(40)));
+    aml_append(dev, method);
+
+    method = aml_method("_GAI", 0, AML_NOTSERIALIZED);
+    aml_append(method, aml_return(aml_name("PMAI")));
+    aml_append(method, aml_return(aml_int(4000)));
+    aml_append(dev, method);
+
+    method = aml_method("_PAI", 1, AML_NOTSERIALIZED);
+    aml_append(method, aml_store(aml_arg(0), aml_name("PMAI")));
+    aml_append(method, aml_notify(aml_name("PMT1"), aml_int(0x84)));
+    aml_append(method, aml_return(aml_int(0)));
+    aml_append(dev, method);
+
+    method = aml_method("_GHL", 0, AML_NOTSERIALIZED);
+    aml_append(method, aml_return(aml_name("HWL")));
+    aml_append(dev, method);
+
+    method = aml_method("_SHL", 1, AML_NOTSERIALIZED);
+    aml_append(method, aml_store(aml_arg(0), aml_name("HWL")));
+    aml_append(method, aml_notify(aml_name("PMT1"), aml_int(0x82)));
+    aml_append(method, aml_return(aml_int(0)));
+    aml_append(dev, method);
+
+    method = aml_method("_PTP", 1, AML_NOTSERIALIZED);
+    aml_append(method, aml_store(aml_arg(0), aml_name("PTPU")));
+    aml_append(method, aml_store(aml_arg(0), aml_name("PTPL")));
+    aml_append(method, aml_return(aml_int(0)));
+    aml_append(dev, method);
+
+    evt = aml_method("_DBX", 0, AML_SERIALIZED);
+    {
+    	aml_append(evt, aml_store(aml_int(0x7), aml_index(aml_name("PMCP"), aml_int(0))));
+    	aml_append(evt, aml_notify(aml_name("PMT1"), aml_int(0x80)));
+    	aml_append(evt, aml_notify(aml_name("PMT1"), aml_int(0x81)));
+    	aml_append(evt, aml_notify(aml_name("PMT1"), aml_int(0x82)));
+    	aml_append(evt, aml_notify(aml_name("PMT1"), aml_int(0x83)));
+    	aml_append(evt, aml_notify(aml_name("PMT1"), aml_int(0x84)));
+    	aml_append(evt, aml_return(aml_int(40)));
+    }
+    aml_append(evt, aml_notify(aml_name("PMT1"), aml_int(0x80)));
+    aml_append(evt, aml_return(aml_int(41)));
+    aml_append(dev, evt);
+
+    aml_append(scope, dev);
+}
+
 static void
 build_dsdt_microvm(GArray *table_data, BIOSLinker *linker,
                    MicrovmMachineState *mms)
@@ -132,6 +223,7 @@ build_dsdt_microvm(GArray *table_data, BIOSLinker *linker,
     isa_build_aml(ISA_BUS(isabus), sb_scope);
     build_ged_aml(sb_scope, GED_DEVICE, x86ms->acpi_dev,
                   GED_MMIO_IRQ, AML_SYSTEM_MEMORY, GED_MMIO_BASE);
+    acpi_add_power(sb_scope);
     acpi_dsdt_add_power_button(sb_scope);
     acpi_dsdt_add_virtio(sb_scope, mms);
     acpi_dsdt_add_xhci(sb_scope, mms);

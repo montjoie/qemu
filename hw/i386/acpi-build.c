@@ -45,6 +45,7 @@
 #include "hw/acpi/vmgenid.h"
 #include "hw/acpi/erst.h"
 #include "hw/acpi/piix4.h"
+#include "hw/acpi/powermeter.h"
 #include "sysemu/tpm_backend.h"
 #include "hw/rtc/mc146818rtc_regs.h"
 #include "migration/vmstate.h"
@@ -1807,6 +1808,10 @@ build_dsdt(GArray *table_data, BIOSLinker *linker,
             aml_append(sb_scope, scope);
         }
     }
+
+#ifdef CONFIG_ACPI_POWER_METER
+    acpi_powermeter_add(sb_scope);
+#endif
 
 #ifdef CONFIG_TPM
     if (TPM_IS_CRB(tpm)) {

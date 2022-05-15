@@ -39,6 +39,7 @@
 #include "hw/acpi/aml-build.h"
 #include "hw/acpi/utils.h"
 #include "hw/acpi/pci.h"
+#include "hw/acpi/powermeter.h"
 #include "hw/acpi/memory_hotplug.h"
 #include "hw/acpi/generic_event_device.h"
 #include "hw/acpi/tpm.h"
@@ -893,6 +894,9 @@ build_dsdt(GArray *table_data, BIOSLinker *linker, VirtMachineState *vms)
     acpi_dsdt_add_power_button(scope);
 #ifdef CONFIG_TPM
     acpi_dsdt_add_tpm(scope, vms);
+#endif
+#ifdef CONFIG_ACPI_POWER_METER
+    acpi_powermeter_add(scope);
 #endif
 
     aml_append(dsdt, scope);

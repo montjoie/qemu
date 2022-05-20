@@ -326,6 +326,7 @@ config ALLWINNER_A10
 config ALLWINNER_H3
     bool
     select ALLWINNER_A10_PIT
+    select ALLWINNER_CRYPTO_SUN8I_CE
     select ALLWINNER_SUN8I_EMAC
     select SERIAL
     select ARM_TIMER

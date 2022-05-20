@@ -37,6 +37,7 @@
 
 #include "qom/object.h"
 #include "hw/arm/boot.h"
+#include "hw/crypto/allwinner-sun8i-ce.h"
 #include "hw/timer/allwinner-a10-pit.h"
 #include "hw/intc/arm_gic.h"
 #include "hw/misc/allwinner-h3-ccu.h"
@@ -76,6 +77,7 @@ enum {
     AW_H3_DEV_EHCI3,
     AW_H3_DEV_OHCI3,
     AW_H3_DEV_CCU,
+    AW_H3_DEV_CRYPTO,
     AW_H3_DEV_PIT,
     AW_H3_DEV_UART0,
     AW_H3_DEV_UART1,
@@ -130,6 +132,7 @@ struct AwH3State {
     AwH3SysCtrlState sysctrl;
     AwSidState sid;
     AwSdHostState mmc0;
+    AwSun8iCEState crypto;
     AwSun8iEmacState emac;
     AwRtcState rtc;
     GICState gic;

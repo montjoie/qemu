@@ -160,6 +160,9 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
     const uint32_t ivmd5[MD5_DIGEST_SIZE / 4] = {
         0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476,
     };
+    static const uint32_t iv_sha1[SHA1_DIGEST_SIZE / 4] = {
+        0x67452301L, 0xEFCDAB89L, 0x98BADCFEL, 0x10325476L, 0xC3D2E1F0L,
+    };
     static const uint32_t iv_sha224[SHA256_DIGEST_SIZE] = {
         0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
         0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
@@ -379,9 +382,6 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
 	}
         break;
     case CE_ALG_SHA1:
-        static const uint32_t iv_sha1[SHA1_DIGEST_SIZE / 4] = {
-            0x67452301L, 0xEFCDAB89L, 0x98BADCFEL, 0x10325476L, 0xC3D2E1F0L,
-        };
         hash = (uint32_t *)dst;
         memcpy(dst, iv_sha1, dsize);
         err = qcrypto_compress_bytes(QCRYPTO_HASH_ALG_SHA1, (const char *)src,

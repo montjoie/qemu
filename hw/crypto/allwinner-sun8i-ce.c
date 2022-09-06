@@ -157,6 +157,29 @@ static uint64_t allwinner_sun8i_ce_read(void *opaque, hwaddr offset,
 
 static int do_task(AwSun8iCEState *s, struct ce_task *t)
 {
+    const uint32_t ivmd5[MD5_DIGEST_SIZE / 4] = {
+        0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476,
+    };
+    static const uint32_t iv_sha224[SHA256_DIGEST_SIZE] = {
+        0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
+        0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
+    };
+    static const uint32_t iv_sha256[SHA256_DIGEST_SIZE] = {
+        0x6a09e667UL, 0xbb67ae85UL, 0x3c6ef372UL, 0xa54ff53aUL,
+        0x510e527fUL, 0x9b05688cUL, 0x1f83d9abUL, 0x5be0cd19UL,
+    };
+    static const uint64_t iv_sha384[SHA512_DIGEST_SIZE / 8] = {
+        0xCBBB9D5DC1059ED8ULL, 0x629A292A367CD507ULL,
+        0x9159015A3070DD17ULL, 0x152FECD8F70E5939ULL,
+        0x67332667FFC00B31ULL, 0x8EB44A8768581511ULL,
+        0xDB0C2E0D64F98FA7ULL, 0x47B5481DBEFA4FA4ULL,
+    };
+    static const uint64_t iv_sha512[SHA512_DIGEST_SIZE / 8] = {
+        0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL,
+        0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL,
+        0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL,
+        0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL,
+    };
     unsigned char *src;
     unsigned char *dst;
     unsigned char biv[AES_BLOCK_SIZE];
@@ -346,9 +369,6 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
         qcrypto_cipher_free(cipher);
         break;
     case CE_ALG_MD5:
-        const uint32_t ivmd5[MD5_DIGEST_SIZE / 4] = {
-            0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476,
-        };
         hash = (uint32_t *)dst;
         memcpy(dst, ivmd5, dsize);
         err = qcrypto_compress_bytes(QCRYPTO_HASH_ALG_MD5, (const char *)src,
@@ -375,10 +395,6 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
         }
         break;
     case CE_ALG_SHA224:
-        static const uint32_t iv_sha224[SHA256_DIGEST_SIZE] = {
-            0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
-            0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
-        };
         hash = (uint32_t *)dst;
         memcpy(dst, iv_sha224, dsize);
         err = qcrypto_compress_bytes(QCRYPTO_HASH_ALG_SHA224, (const char *)src,
@@ -392,10 +408,6 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
         }
         break;
     case CE_ALG_SHA256:
-        static const uint32_t iv_sha256[SHA256_DIGEST_SIZE] = {
-            0x6a09e667UL, 0xbb67ae85UL, 0x3c6ef372UL, 0xa54ff53aUL,
-            0x510e527fUL, 0x9b05688cUL, 0x1f83d9abUL, 0x5be0cd19UL,
-        };
         hash = (uint32_t *)dst;
         memcpy(dst, iv_sha256, dsize);
         err = qcrypto_compress_bytes(QCRYPTO_HASH_ALG_SHA256, (const char *)src,
@@ -409,12 +421,6 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
         }
         break;
     case CE_ALG_SHA384:
-        static const uint64_t iv_sha384[SHA512_DIGEST_SIZE / 8] = {
-            0xCBBB9D5DC1059ED8ULL, 0x629A292A367CD507ULL,
-            0x9159015A3070DD17ULL, 0x152FECD8F70E5939ULL,
-            0x67332667FFC00B31ULL, 0x8EB44A8768581511ULL,
-            0xDB0C2E0D64F98FA7ULL, 0x47B5481DBEFA4FA4ULL,
-        };
         hash64 = (uint64_t *)dst;
         memcpy(dst, iv_sha384, dsize);
         err = qcrypto_compress_bytes(QCRYPTO_HASH_ALG_SHA384, (const char *)src,
@@ -428,12 +434,6 @@ static int do_task(AwSun8iCEState *s, struct ce_task *t)
         }
         break;
     case CE_ALG_SHA512:
-        static const uint64_t iv_sha512[SHA512_DIGEST_SIZE / 8] = {
-            0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL,
-            0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL,
-            0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL,
-            0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL,
-        };
         hash64 = (uint64_t *)dst;
         memcpy(dst, iv_sha512, dsize);
         err = qcrypto_compress_bytes(QCRYPTO_HASH_ALG_SHA512, (const char *)src,
